@@ -1,19 +1,3 @@
-# fabric-network
-## 概述
-
-这是 Hyperledger Fabric 2.x多机环境。它是由两个组织和四个peer和三个使用 Docker Swarm 作为多主机容器环境的排序服务组成的设置。我们首先介绍Docker Swarm，完成了这些步骤，在两个主机网络中建立这个结构网络。
-
-## **DOCKER SWARM**
-
-Docker Swarm 是 Docker 环境中原生的容器编排工具。简而言之，它为跨多个主机的容器提供了一个覆盖网络。这个覆盖网络上的那些容器可以相互通信，就像它们在一台大型主机上一样。好的一面显然是，原始配置只需少量修改即可使用，并且配置中没有编码 IP 等静态信息。在本文中，我们使用 Docker Swarm。
-
-## **先决条件**
-
-1. docker
-2. docker-compose
-3. fabric-network（克隆 GitHub 代码）
-
-
 
 ## **网络拓扑结构**
 
@@ -54,13 +38,14 @@ Docker Swarm 是 Docker 环境中原生的容器编排工具。简而言之，�
 现在我们可以打开四个终端。
 
 ```
-ssh -i <key> ubuntu@<public IP>
+ssh duck@140.123.179.50
 ```
 
 **从主机1**，
 
 ```
-docker swarm init --advertise-addr <pc-1 ip address>docker swarm join-token manager
+docker swarm init --advertise-addr 140.123.179.50 
+docker swarm join-token manager
 ```
 
 使用最后一个输出，将其他主机作为管理器添加到这个群。
@@ -68,13 +53,14 @@ docker swarm init --advertise-addr <pc-1 ip address>docker swarm join-token mana
 **从主机2**
 
 ```
-<output from join-token manager> --advertise-addr <pc-2 ip address>
+<output from join-token manager> --advertise-addr 140.123.179.23
 ```
 
 **从主机1，**
 
 ```
-docker network create --attachable --driver overlay basic-network docker network ls
+docker network create --attachable --driver overlay fabric-network_test
+docker network ls
 ```
 
 **从主机2，**
@@ -87,6 +73,12 @@ docker network ls
 
 ### **第3步：在主机1中准备好FABRIC文件并复制给其他人**
 
+#壓縮raft-4node-swarm資料夾
+tar -cf fabric-network.tar fabric-network/
+#解壓到指定裝置及路徑
+scp fabric-network.tar duck-2@140.123.179.23:/home/duck-2/
+tar -xvf fabric-network.tar
+
 关键部分之一是确保所有组件共享相同的加密文件。我们将使用主机1创建文件并将它们复制到其他主机。
 
 **从主机1，**
@@ -95,15 +87,14 @@ docker network ls
 ./create-artifacts.sh
 ```
 
-理论上，我们只需要确保身份（证书和签名密钥）遵循所需的方案。组织（例如 org1）的证书由同一 CA (ca.org1) 颁发和签署。为简单起见，在本演示中，我们在 PC -1 中创建所有材料，然后将整个目录 **crypto-config** 复制到其他主机。
-
 ### **第 4 步：在每个主机中启动容器**
 
 我们使用 docker-compose 来启动所有节点。
 
 ```
 # from PC -1,
-docker-compose -f pc1.yaml up -d# from PC -2,
+docker-compose -f pc1.yaml up -d
+# from PC -2,
 docker-compose -f pc2.yaml up -d
 ```
 
@@ -133,6 +124,12 @@ docker-compose -f pc2.yaml up -d
 ./invoke.sh./query.sh
 ```
 
+### **關閉**
+
+```
+docker-compose -f pc1.yaml down -v
+sudo docker volume prune
+```
 ## **总结**
 
 在这个演示中，我们建立了两个具有基本网络的组织。这些容器在两台独立的主机上运行。Docker Swarm 将这两台主机结合在一起，以便运行在不同主机上的容器可以进行通信。我们不再在配置文件上指定静态 IP，所有容器都像在同一台主机上一样相互通信。
