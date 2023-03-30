@@ -73,11 +73,13 @@ docker network ls
 
 ### **第3步：在主机1中准备好FABRIC文件并复制给其他人**
 
+```
 #壓縮raft-4node-swarm資料夾
 tar -cf fabric-network.tar fabric-network/
 #解壓到指定裝置及路徑
 scp fabric-network.tar duck-2@140.123.179.23:/home/duck-2/
 tar -xvf fabric-network.tar
+```
 
 关键部分之一是确保所有组件共享相同的加密文件。我们将使用主机1创建文件并将它们复制到其他主机。
 
