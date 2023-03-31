@@ -1,18 +1,17 @@
-
 ## **网络拓扑结构**
 
-### **主机1 (组织 -1)**
+### **主机 1 (组织 -1)**
 
 1. 证书颁发机构 (CA)
-2. 2 个peer（peer0.org1.exampl.com、peer1.org1.example.com）
-3. 2 个orderer（orderer0.example.com、orderer1.example.com）
+2. 2 个 peer（peer0.org1.exampl.com、peer1.org1.example.com）
+3. 2 个 orderer（orderer0.example.com、orderer1.example.com）
 4. cli
 
-### **主机2 (组织-2)**
+### **主机 2 (组织-2)**
 
 1. 证书颁发机构 (CA)
-2. 2 个peer（peer0.org2.exampl.com、peer1.org2.example.com）
-3. 3 个orderer (orderer2.example.com)
+2. 2 个 peer（peer0.org2.exampl.com、peer1.org2.example.com）
+3. 3 个 orderer (orderer2.example.com)
 
 ### **整体流程**
 
@@ -20,7 +19,7 @@
 2. 形成一个覆盖网络并使所有两个主机加入。
 3. 准备主机 1 上的所有内容，包括配置文件、证书、每个节点的 docker-compose 文件。然后将整个结构复制到所有其他主机。
 4. 使用 docker-compose 启动所有节点。
-5. 创建一个通道并将所有节点加入 *mychannel*。
+5. 创建一个通道并将所有节点加入 _mychannel_。
 6. 安装并实例化 Fabcar 链码。
 7. 调用和查询链码函数。
 
@@ -38,52 +37,50 @@
 现在我们可以打开四个终端。
 
 ```
-ssh duck@140.123.179.50
+ssh duck@192.168.1.115
 ```
 
-**从主机1**，
+**从主机 1**，
 
 ```
-docker swarm init --advertise-addr 140.123.179.50 
+docker swarm init --advertise-addr 192.168.1.115
 docker swarm join-token manager
 ```
 
 使用最后一个输出，将其他主机作为管理器添加到这个群。
 
-**从主机2**
+**从主机 2**
 
 ```
-<output from join-token manager> --advertise-addr 140.123.179.23
+<output from join-token manager> --advertise-addr 192.168.1.114
 ```
 
-**从主机1，**
+**从主机 1，**
 
 ```
 docker network create --attachable --driver overlay fabric-network_test
 docker network ls
 ```
 
-**从主机2，**
+**从主机 2，**
 
 ```
 docker network ls
 ```
 
-
-
-### **第3步：在主机1中准备好FABRIC文件并复制给其他人**
+### **第 3 步：在主机 1 中准备好 FABRIC 文件并复制给其他人**
 
 ```
 #壓縮raft-4node-swarm資料夾
 tar -cf fabric-network.tar fabric-network/
 #解壓到指定裝置及路徑
-scp fabric-network.tar duck-2@140.123.179.23:/home/duck-2/
+scp fabric-network.tar duck-2@192.168.1.114:/home/duck-2/
 tar -xvf fabric-network.tar
 ```
 
-关键部分之一是确保所有组件共享相同的加密文件。我们将使用主机1创建文件并将它们复制到其他主机。
+关键部分之一是确保所有组件共享相同的加密文件。我们将使用主机 1 创建文件并将它们复制到其他主机。
 
-**从主机1，**
+**从主机 1，**
 
 ```
 ./create-artifacts.sh
@@ -100,9 +97,9 @@ docker-compose -f pc1.yaml up -d
 docker-compose -f pc2.yaml up -d
 ```
 
-### **第5步：创建通道，所有peer加入**
+### **第 5 步：创建通道，所有 peer 加入**
 
-由于我们在主机1上只有 CLI，所有命令都是从主机1终端发出的。
+由于我们在主机 1 上只有 CLI，所有命令都是从主机 1 终端发出的。
 
 ```
 ./createChannel.sh
@@ -110,9 +107,9 @@ docker-compose -f pc2.yaml up -d
 
 ### **第 6 步：安装和实例化 FABCAR 链码**
 
-从主机1终端，
+从主机 1 终端，
 
-将 Fabcar 链码安装到所有peer
+将 Fabcar 链码安装到所有 peer
 
 ```
 ./deployChaincode.sh
@@ -132,7 +129,7 @@ docker-compose -f pc2.yaml up -d
 docker-compose -f pc1.yaml down -v
 sudo docker volume prune
 ```
+
 ## **总结**
 
 在这个演示中，我们建立了两个具有基本网络的组织。这些容器在两台独立的主机上运行。Docker Swarm 将这两台主机结合在一起，以便运行在不同主机上的容器可以进行通信。我们不再在配置文件上指定静态 IP，所有容器都像在同一台主机上一样相互通信。
-
